@@ -51,9 +51,11 @@ def _click_verify_link(link):
                            proxies={"http": get_proxy(), "https": get_proxy()})
         resp_json = resp.json()
         if resp_json["status"] == "processing":
-            time.sleep(5)
-        elif resp_json["status"] == "ready":
+            time.sleep(6)
+        elif resp_json["errorId"] == 0 and resp_json["status"] == "ready":
             break
+        elif resp_json["errorId"] == 1:
+            raise Exception(f"task {task_id} error: {resp_json['errorDescription']}")
         else:
             raise Exception("unknown status")
 
