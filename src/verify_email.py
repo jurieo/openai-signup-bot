@@ -15,6 +15,7 @@ pm = ThreadPoolManager(email_worker_num)
 
 
 def _precheck_verify_link(sm,link):
+    logger.debug(f"开始使用之前成功的信息跳过cf")
     info = sm.get_success_info()
     client = requests.Session()
     user_agent = info[1]
