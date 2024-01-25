@@ -2,3 +2,4 @@
 *.iml
 config/config.json
 data/*.txt
+__pycache__

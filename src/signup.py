@@ -147,8 +147,10 @@ class Signup:
             try:
                 identifier = ''.join(
                     [secrets.choice(string.ascii_letters + string.digits) for _ in range(12)]) + "@" + domain
-                password = ''.join(
-                    [secrets.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(15)])
+                # password = ''.join(
+                #     [secrets.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(15)])
+                
+                password = "Rteshe476E9yuTy"
 
                 self._check_identifier(state, identifier)
 
@@ -270,9 +272,14 @@ class Signup:
 
         access_token, refresh_token = self._get_access_token()
 
+        write_lock = threading.Lock()
+
         while True:
             account_status = self._login(access_token)
             if account_status and account_status["next"] == "register":
+                # 邮件认证成功之后，账号就成功了，只是需要填写基本信息
+                self.write_to_file(write_lock, "./data/credit.txt",
+                               f"{identifier}----{password}===")
                 break
             else:
                 logger.debug(f"{identifier} waiting for email verify")
@@ -304,15 +311,12 @@ class Signup:
 
         credit = self._get_credit_grants(sess)
 
-        write_lock = threading.Lock()
 
-        if credit and credit['total_granted'] > 0:
+        if credit:
             logger.info(f"account: {identifier} has credit: {credit['total_granted']}")
             self.write_to_file(write_lock, "./data/credit.txt",
-                               f"{identifier}----{password}----{sess}----{refresh_token}\n")
-        else:
-            self.write_to_file(write_lock, "./data/account.txt",
-                               f"{identifier}----{password}----{sess}----{refresh_token}\n")
+                               f"----{sess}----{refresh_token}==={credit['total_granted']}\n")
+        
         self.session.close()
 
     def write_to_file(self, lock, file_name, text):

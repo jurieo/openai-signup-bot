@@ -3,6 +3,7 @@ from collections import deque
 
 from config import max_success_accounts, max_failure_accounts
 from log import logger
+from proxy import get_proxy
 
 
 class GlobalStateManager:
@@ -14,6 +15,9 @@ class GlobalStateManager:
         self.max_success = max_success_accounts
         self.max_failure = max_failure_accounts
         self._should_stop = False
+        self.cookie = None
+        self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+        self.proxy = get_proxy()
 
     def increment_success(self):
         with self.lock:
@@ -38,6 +42,13 @@ class GlobalStateManager:
             logger.error(message)
 
     def should_stop(self):
-
         with self.lock:
             return self._should_stop
+
+    def set_success_info(self, info, proxy):
+        self.cookie = info.user_agent
+        self.user_agent = info.cookies
+        self.proxy = proxy
+
+    def get_success_info(self):
+        return self.cookie, self.user_agent, self.proxy
