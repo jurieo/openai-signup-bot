@@ -100,8 +100,6 @@ def verify_email(sm):
     try:
         mail.login(username, password)
     except Exception as e:
-        sm.stop_with_message("email worker stopped pls check your network or email account and password")
-
         raise e
 
     logger.debug("start to monitor openai verify email")
@@ -151,8 +149,9 @@ def verify_email(sm):
         while True and not sm.should_stop():
             check_mail()
             time.sleep(10)
-    finally:
+    except Exception as e:
         sm.stop_with_message("email worker stopped pls check your network or email account and password")
+    finally:
         mail.logout()
 
 

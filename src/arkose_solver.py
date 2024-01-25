@@ -52,15 +52,23 @@ class Capsolver(ArkoseSolver):
 
         task_id = None
 
+        resp_json = None
+
         for i in range(3):
             try:
-                resp = self.session.post(url, data=payload, timeout=10,
+                resp = self.session.post(url, data=payload, timeout=30,
                                          proxies={"http": get_proxy(), "https": get_proxy()})
                 resp_json = resp.json()
+
                 task_id = resp_json["taskId"]
                 break
             except Exception as e:
                 logger.warning(f"fail to create arkose task retry: {i}")
+
+            if resp_json:
+                error_code = resp_json["errorCode"]
+                if error_code and 'ERROR_INVALID_TASK_DATA' in error_code:
+                    raise Exception(f"capsolver error: {error_code}")
 
             time.sleep(5)
 

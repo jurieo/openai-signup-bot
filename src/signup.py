@@ -27,7 +27,7 @@ check_password_url = f"{auth_url}/u/signup/password?state="
 
 
 class Signup:
-    def __init__(self):
+    def __init__(self,sm):
         self.session = requests.Session(
             impersonate="chrome99_android", proxies={"http": get_proxy(), "https": get_proxy()},
             http_version=CurlHttpVersion.V1_1,
@@ -35,6 +35,7 @@ class Signup:
         )
 
         self.arkose_solver = Capsolver()
+        self.sm = sm
 
     def _get_csrf(self):
         retry = 5
@@ -288,6 +289,9 @@ class Signup:
                     break
             except Exception as e:
                 logger.warning(f"fail to get arkose token current retry: {i}")
+                if "ERROR_INVALID_TASK_DATA" in str(e):
+                    self.sm.stop_with_message('capsolver this service is currently undergoing maintenance')
+                    raise Exception(f"fail to get arkose token {e}")
 
         if not arkose:
             raise Exception(f"fail to get arkose token after {arkose_retry} attempts please check your network or ip")
@@ -369,7 +373,7 @@ class Signup:
 
 
 def main(sm):
-    s = Signup()
+    s = Signup(sm)
 
     def do_sign_up():
         log_context.set(trace_id=str(uuid.uuid4()))

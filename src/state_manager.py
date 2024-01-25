@@ -35,7 +35,7 @@ class GlobalStateManager:
     def stop_with_message(self, message):
         with self.lock:
             self._should_stop = True
-            logger.warning(message)
+            logger.error(message)
 
     def should_stop(self):
 
