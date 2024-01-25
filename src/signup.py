@@ -354,6 +354,8 @@ class Signup:
                 resp_json = resp.json()
                 logger.debug(f"account created resp {resp_json}")
                 return resp_json
+            else:
+                logger.warning(f"fail to create account: {resp.text}")
             time.sleep(5)
 
         raise Exception(f"fail to create account after {retry} attempts please check your network or ip")
