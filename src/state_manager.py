@@ -46,8 +46,8 @@ class GlobalStateManager:
             return self._should_stop
 
     def set_success_info(self, info, proxy):
-        self.cookie = info.user_agent
-        self.user_agent = info.cookies
+        self.cookie = info['cookies']
+        self.user_agent = info['user_agent']
         self.proxy = proxy
 
     def get_success_info(self):

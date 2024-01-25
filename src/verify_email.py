@@ -21,8 +21,9 @@ def _precheck_verify_link(sm,link):
     client.proxies = {"http": info[2], "https": info[2]}
     client.headers.update({"User-Agent": user_agent})
     cookies = info[0]
-    for name, value in cookies.items():
-        client.cookies.set(name, value)
+    if cookies:
+        for name, value in cookies.items():
+            client.cookies.set(name, value)
 
     response_get = client.get(link, allow_redirects=False)
     # 检查响应内容
@@ -108,7 +109,7 @@ def click_verify_link(sm, link):
     success = False
     for i in range(3):
         try:
-            # _click_verify_link(link)
+            # _click_verify_link(sm, link)
             _precheck_verify_link(sm, link)
             success = True
             break
