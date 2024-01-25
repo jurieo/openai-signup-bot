@@ -14,7 +14,7 @@ from proxy import get_cf_solver_proxy, get_proxy
 pm = ThreadPoolManager(email_worker_num)
 
 
-def _precheck_verify_link(sm,link):
+def _precheck_verify_link(sm, link):
     logger.debug(f"开始使用之前成功的信息跳过cf")
     info = sm.get_success_info()
     client = requests.Session()
@@ -26,17 +26,21 @@ def _precheck_verify_link(sm,link):
         for name, value in cookies.items():
             client.cookies.set(name, value)
 
-    response_get = client.get(link, allow_redirects=False)
-    # 检查响应内容
-    print("GET请求的响应：", response_get)
-    if response_get.status_code == 302:
-        redirect_url = response_get.headers["Location"]
-        logger.debug(f"redirect url: {redirect_url}")
-        res = client.get(redirect_url, allow_redirects=False)
-        logger.debug(f"redirect 响应: {res.text}")
-        if "<title>OpenAI Platform</title>" not in res.text:
-            logger.debug(f"自动跳过cf失败,将使用yes绕过")
-            _click_verify_link(sm,link)
+    try:
+        response_get = client.get(link, allow_redirects=False, timeout=30)
+        print("GET请求的响应：", response_get)
+        if response_get.status_code == 302:
+            redirect_url = response_get.headers["Location"]
+            logger.debug(f"redirect url: {redirect_url}")
+            res = client.get(redirect_url, allow_redirects=False)
+            logger.debug(f"redirect 响应: {res.text}")
+            if "<title>OpenAI Platform</title>" not in res.text:
+                logger.debug(f"自动跳过cf失败,将使用yes绕过")
+                _click_verify_link(sm, link)
+            else:
+                return True
+    except Exception as e:
+        _click_verify_link(sm, link)
 
 
 def _click_verify_link(sm, link):
