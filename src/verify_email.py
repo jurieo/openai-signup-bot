@@ -39,6 +39,8 @@ def _precheck_verify_link(sm, link):
                 _click_verify_link(sm, link)
             else:
                 return True
+        else:
+            _click_verify_link(sm, link)
     except Exception as e:
         _click_verify_link(sm, link)
 
