@@ -4,6 +4,7 @@ import string
 import threading
 import time
 import uuid
+import petname
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 
@@ -145,8 +146,9 @@ class Signup:
 
         for i in range(retry):
             try:
-                identifier = ''.join(
-                    [secrets.choice(string.ascii_letters + string.digits) for _ in range(12)]) + "@" + domain
+                identifier = petname.generate(words=2, separator='_', letters=10) + "@" + domain
+                # identifier = ''.join(
+                #     [secrets.choice(string.ascii_letters + string.digits) for _ in range(12)]) + "@" + domain
                 # password = ''.join(
                 #     [secrets.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(15)])
                 
