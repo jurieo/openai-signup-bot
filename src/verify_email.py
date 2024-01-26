@@ -84,6 +84,8 @@ def _click_verify_link(sm, link):
             json={"clientKey": yes_client_key, "taskId": task_id},
             proxies={"http": get_proxy(), "https": get_proxy()},
         )
+        
+        # logger.debug(f"task {task_id} 返回结果: {resp.text}")
         resp_json = resp.json()
         if resp_json["status"] == "processing":
             time.sleep(6)
@@ -95,7 +97,7 @@ def _click_verify_link(sm, link):
             raise Exception("unknown status")
 
     error_id = resp_json["errorId"]
-    logger.debug(f"task {task_id} 返回结果: {resp_json}")
+    
 
     if error_id == 0:
         logger.debug(f"success verify email link {link}")
