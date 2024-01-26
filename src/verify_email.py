@@ -116,8 +116,8 @@ def click_verify_link(sm, link):
     success = False
     for i in range(3):
         try:
-            # _click_verify_link(sm, link)
-            _precheck_verify_link(sm, link)
+            _click_verify_link(sm, link)
+            # _precheck_verify_link(sm, link)
             success = True
             break
         except Exception as e:

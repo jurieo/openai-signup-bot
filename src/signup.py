@@ -281,7 +281,7 @@ class Signup:
             if account_status and account_status["next"] == "register":
                 # 邮件认证成功之后，账号就成功了，只是需要填写基本信息
                 self.write_to_file(write_lock, "./data/credit.txt",
-                               f"{identifier}----{password}===")
+                               f"\n{identifier}----{password}===")
                 break
             else:
                 logger.debug(f"{identifier} waiting for email verify")
@@ -317,7 +317,7 @@ class Signup:
         if credit:
             logger.info(f"account: {identifier} has credit: {credit['total_granted']}")
             self.write_to_file(write_lock, "./data/credit.txt",
-                               f"----{sess}----{refresh_token}==={credit['total_granted']}\n")
+                               f"{sess}----{refresh_token}==={credit['total_granted']}")
         
         self.session.close()
 
