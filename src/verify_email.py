@@ -7,11 +7,10 @@ from curl_cffi import requests
 from loguru import logger
 
 import config
-from config import yes_client_key, email_worker_num
-from pool_manager import ThreadPoolManager
+from config import yes_client_key
 from proxy import get_cf_solver_proxy, get_proxy
 
-pm = ThreadPoolManager(email_worker_num)
+# is_login = False
 
 
 def _precheck_verify_link(sm, link):
@@ -46,6 +45,7 @@ def _precheck_verify_link(sm, link):
 
 
 def _click_verify_link(sm, link):
+    success = False
     client = requests.Session(proxies={"http": get_proxy(), "https": get_proxy()})
 
     url = "https://api.yescaptcha.com/createTask"
@@ -84,12 +84,14 @@ def _click_verify_link(sm, link):
             json={"clientKey": yes_client_key, "taskId": task_id},
             proxies={"http": get_proxy(), "https": get_proxy()},
         )
-        
+
         # logger.debug(f"task {task_id} 返回结果: {resp.text}")
         resp_json = resp.json()
         if resp_json["status"] == "processing":
+            logger.debug(f"task {task_id} processing")
             time.sleep(6)
         elif resp_json["errorId"] == 0 and resp_json["status"] == "ready":
+            logger.debug(f"task {task_id} 验证成功")
             break
         elif resp_json["errorId"] == 1:
             raise Exception(f"task {task_id} error: {resp_json['errorDescription']}")
@@ -97,7 +99,6 @@ def _click_verify_link(sm, link):
             raise Exception("unknown status")
 
     error_id = resp_json["errorId"]
-    
 
     if error_id == 0:
         logger.debug(f"success verify email link {link}")
@@ -105,32 +106,36 @@ def _click_verify_link(sm, link):
             cf_clearance = resp_json["solution"]["cookies"]["cf_clearance"]
             if cf_clearance:
                 sm.set_success_info(resp_json["solution"], get_proxy())
+                success = True
                 return cf_clearance
         except Exception as e:
             raise Exception(f"failed to get cf_clearance from {resp_json}")
 
-    raise Exception(
-        f"failed to verify email link {link} error id {error_id} task id {task_id}"
-    )
+    return success
+
+    # raise Exception(
+    #     f"failed to verify email link {link} error id {error_id} task id {task_id}"
+    # )
 
 
 def click_verify_link(sm, link):
     success = False
     for i in range(3):
         try:
-            _click_verify_link(sm, link)
+            success = _click_verify_link(sm, link)
+            if success:
+                break
             # _precheck_verify_link(sm, link)
-            success = True
-            break
         except Exception as e:
             logger.warning(f"failed to click verify link {link} retry {i + 1} times")
             time.sleep(3)
 
     if not success:
         logger.error(f"failed to click verify link {link} please check your proxy")
+    return success
 
 
-def verify_email(sm):
+def verify_email(sm, identifier):
     username = config.email_addr
     password = config.email_password
     imap_server = config.email_imap_server
@@ -165,9 +170,13 @@ def verify_email(sm):
                 except LookupError:
                     return payload.decode("utf-8", errors="replace")
 
-    def check_mail():
+    def check_mail(identifier):
         mail.select("INBOX")
-        status, messages = mail.search(None, '(UNSEEN FROM "noreply@tm.openai.com")')
+        logger.debug("check mail ", identifier)
+        # status, messages = mail.search(None, '(UNSEEN FROM "noreply@tm.openai.com")')
+        status, messages = mail.search(
+            None, '(UNSEEN FROM "noreply@tm.openai.com" TO "{}")'.format(identifier)
+        )
         messages = messages[0].split()
 
         for mail_id in messages:
@@ -187,12 +196,12 @@ def verify_email(sm):
                             )
                             if link:
                                 link = link.group(1)
-                                pm.add_task(lambda: click_verify_link(sm, link))
+                                return click_verify_link(sm, link)
 
     try:
         while True and not sm.should_stop():
-            check_mail()
-            time.sleep(10)
+            return check_mail(identifier)
+            # time.sleep(10)
     except Exception as e:
         sm.stop_with_message(
             "email worker stopped pls check your network or email account and password"
@@ -201,5 +210,25 @@ def verify_email(sm):
         mail.logout()
 
 
-if __name__ == "__main__":
-    verify_email()
+class EmailClient:
+    def __init__(self, link):
+        self.mail = None
+        self.is_logged_in = False
+        self.link = link
+
+    def login(self):
+        username = config.email_addr
+        password = config.email_password
+        imap_server = config.email_imap_server
+        email_imap_port = config.email_imap_port
+
+        if email_imap_port:
+            self.mail = imaplib.IMAP4_SSL(imap_server, port=email_imap_port)
+        else:
+            self.mail = imaplib.IMAP4_SSL(imap_server)
+
+        try:
+            self.mail.login(username, password)
+            self.is_logged_in = True
+        except Exception as e:
+            raise e
